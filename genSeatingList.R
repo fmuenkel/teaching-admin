@@ -12,11 +12,16 @@ courses <- paste0(readline("Specify Course Name (fixed part of Banner filenames,
 subset <- readline("Specify set of exam numbers (e.g. Odds, Evens or leave blank for All): ")
 subset <- ifelse(subset=="","All", subset)
 CompileTeXFlag <- ifelse(readline("Enter 0 to NOT compile LaTeX files automatically, otherwise leave empty: ")==0,FALSE,TRUE)
+
 #Default (test) values
 outfile <- ifelse(outfile=="",'FINA1000_2017Fall_Final', outfile)
-sections <- ifelse(length(sections)==0, c('A','B','C'), sections)
-courses <- ifelse(courses=="", paste0('FINA_1000_1', sections), courses)
-  
+if (length(sections)==0) {
+  sections <- c('A','B','C') 
+}
+if (courses=="") {
+  courses <- paste0('FINA_1000_1', sections)
+}
+ 
 # create masterlist
 courselist <- list()
 for (i in 1:length(courses)) {

@@ -21,6 +21,6 @@ The goal of the R code is to automate the administrative part of exam preparatio
 2. Open each file and save it as *.csv file (Banner is actually lying to you when
    it saves xls files; In reality these are SYLK application interchange files, but Excel can read them)
 3. To avoid empty seats set RecordNumber (1st Column) to '999' for students which you want to sort towards the end of the list (e.g. Disability Center students or students who will write on different dates).
-4. Run the code using Ctrl + Alt + R
+4. Run the code using Ctrl + Shift + S in RStudio
 
 **Consider this a beta version! Any comments and improvements are welcome!**

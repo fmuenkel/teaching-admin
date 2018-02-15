@@ -6,7 +6,7 @@ library(tidyr)          # for separate()
 library(gridExtra)      # for grid.arrange & tableGrob
 library(openxlsx)       # for Excel (but does not read xls files)
 
-outfile <- readline("Specify output file (e.g. FINA1000_2017Fall_Midterm2): ")  
+outfile <- readline("Specify output file (e.g. FINA1000_2017Fall_Final): ")  
 sections <- strsplit(readline("Specify section (e.g. ABC or CE): "), split="")[[1]]
 courses <- paste0(readline("Specify Course Name (fixed part of Banner filenames, e.g. FINA_1000_1): "), sections)
 subset <- readline("Specify set of exam numbers (e.g. Odds, Evens or leave blank for All): ")
@@ -70,6 +70,9 @@ write2pdf(listByA, 22, outfile, "ExamListByA")
 # Create Excel file
 xlsxlist <- list("Masterlist" = masterlist, "by Name" = listByLast, "by A Number" = listByA)
 write.xlsx(xlsxlist, paste0(outfile,"-ExamList.xlsx"), row.names=F)
+print("Masterfile successfully created!")
+print("Examlist (By Last Name) successfully created!")
+print("Examlist (By ANumber) successfully created!")
 
 # Create Signature Sheet
 m <- masterlist
@@ -108,14 +111,16 @@ write("\\end{LARGE}", file=sigfile, append = T)
 write("\\end{document}", file=sigfile, append = T)
 
 if (CompileTeXFlag) {
-  system(command = paste0("pdflatex -synctex=1 -shell-escape -interaction=nonstopmode ",sigfile))
-  system(command = paste0("pdflatex -synctex=1 -shell-escape -interaction=nonstopmode ",sigfile))
+  system(command = paste0("pdflatex -synctex=1 -shell-escape -interaction=batchmode ",sigfile))
+  system(command = paste0("pdflatex -synctex=1 -shell-escape -interaction=batchmode ",sigfile))
 
   # Cleaning up LaTeX build files
   sigfileshort <- substr(sigfile, 1, nchar(sigfile)-4)
   system(command = paste0("rm -f ",sigfileshort, ".aux"))
   system(command = paste0("rm -f ",sigfileshort, ".log"))
   system(command = paste0("rm -f ",sigfileshort, ".synctex.gz"))
+  
+  print("Signature sheet successfully created!")
 }
 
 # Display warning if there are students with identical Last & First Name

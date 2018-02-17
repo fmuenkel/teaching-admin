@@ -72,7 +72,7 @@ xlsxlist <- list("Masterlist" = masterlist, "by Name" = listByLast, "by A Number
 write.xlsx(xlsxlist, paste0(outfile,"-ExamList.xlsx"), row.names=F)
 print("Masterfile successfully created!")
 print("Examlist (By Last Name) successfully created!")
-print("Examlist (By ANumber) successfully created!")
+print("Examlist (By A Number) successfully created!")
 
 # Create Signature Sheet
 m <- masterlist
@@ -86,7 +86,6 @@ write("\\newcolumntype{L}[1]{>{\\raggedright\\let\\newline\\\\\\arraybackslash\\
 write("\\newcolumntype{C}[1]{>{\\centering\\let\\newline\\\\\\arraybackslash\\hspace{0pt}}m{#1}}",file=sigfile, append = T)
 write("\\newcolumntype{R}[1]{>{\\raggedleft\\let\\newline\\\\\\arraybackslash\\hspace{0pt}}m{#1}}",file=sigfile, append = T)
 write("\\pagestyle{fancy}", file=sigfile, append = T)
-#write(paste0("\\lhead{",gsub("_","\\\\_",inputfileshort),"}"), file=sigfile, append = T)
 write(paste0("\\lhead{",gsub("_","\\\\_",outfile),"}"), file=sigfile, append = T)
 write("\\rhead{Page \\thepage\\ of \\pageref{LastPage}}", file=sigfile, append = T)
 write("\\topmargin -20mm", file=sigfile, append = T)
@@ -101,8 +100,6 @@ for (i in 1:nrow(m)) {
         write("\\hline", file=sigfile, append = T)
         write("Exam & Name & A Number & Signature \\\\ \\hline", file=sigfile, append = T)
     }
-#    print(m$ExamNumber[i])
-#    print(m$LastName[i])
     write(paste0(m$ExamNumber[i],"&",m$LastName[i],",",m$FirstName[i],"& & \\\\ \\hline"), file=sigfile, append = T)
     if (i%%20 == 0) write("\\end{tabular}", file=sigfile, append = T)
 }
@@ -111,15 +108,17 @@ write("\\end{LARGE}", file=sigfile, append = T)
 write("\\end{document}", file=sigfile, append = T)
 
 if (CompileTeXFlag) {
-  system(command = paste0("pdflatex -synctex=1 -shell-escape -interaction=batchmode ",sigfile))
-  system(command = paste0("pdflatex -synctex=1 -shell-escape -interaction=batchmode ",sigfile))
-
-  # Cleaning up LaTeX build files
+  command <- paste0("pdflatex -synctex=1 -shell-escape -interaction=batchmode ",sigfile)
+  if (Sys.info()['sysname']=="Linux") {
+    command <- paste0(command, "> /dev/null")  
+  }
+  system(command)
+  system(command)
+  # Clean up LaTeX build files
   sigfileshort <- substr(sigfile, 1, nchar(sigfile)-4)
   system(command = paste0("rm -f ",sigfileshort, ".aux"))
   system(command = paste0("rm -f ",sigfileshort, ".log"))
   system(command = paste0("rm -f ",sigfileshort, ".synctex.gz"))
-  
   print("Signature sheet successfully created!")
 }
 
@@ -128,9 +127,3 @@ if (dim(masterlist[duplicated(masterlist[c("LastName","FirstName")]),])[1] > 0) 
   warning("Masterlist contains students with identical First AND Last Name")
   masterlist[duplicated(masterlist[c("LastName","FirstName")]),]
 }
-
-# opening file in SumatraPDF does not work yet
-#system(command = paste0("C:/D-other/portable/SumatraPDF.exe ", sigfileshort, ".pdf  -reuse-instance", sigfileshort, ".pdf"))
-#system(command = paste0("C:/D-other/portable/SumatraPDF.exe ", sigfileshort, ".pdf"))
-#system(command = paste0("C:/D-other/portable/SumatraPDF.exe ", sigfileshort,".pdf"))
-

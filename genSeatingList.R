@@ -8,9 +8,10 @@ library(openxlsx)       # for Excel (but does not read xls files)
 
 outfile <- readline("Specify output file (e.g. FINA1000_2017Fall_Final): ")  
 sections <- strsplit(readline("Specify section (e.g. ABC or CE): "), split="")[[1]]
-courses <- paste0(readline("Specify Course Name (fixed part of Banner filenames, e.g. FINA_1000_1): "), sections)
+courses <- paste0(readline("Specify Course Name (fixed part of Banner xls filenames, e.g. FINA_1000_1): "), sections)
 subset <- readline("Specify set of exam numbers (e.g. Odds, Evens or leave blank for All): ")
 subset <- ifelse(subset=="","All", subset)
+seed <- readline("Enter numeric seed for reproducable sorting or leave empty: ")
 CompileTeXFlag <- ifelse(readline("Enter 0 to NOT compile LaTeX files automatically, otherwise leave empty: ")==0,FALSE,TRUE)
 
 #Default (test) values
@@ -31,6 +32,15 @@ for (i in 1:length(courses)) {
 masterlist <- do.call('rbind',courselist)
 masterlist <- masterlist[complete.cases(masterlist),]
 masterlist$Student.Name <- as.character(masterlist$Student.Name)
+if (!is.na(as.numeric(seed))) {
+  seed <- as.numeric(seed)
+  set.seed(seed)
+  print(paste0("This sorting can be reproduced with seed: ", seed))
+} else if (seed=="") {
+  print("No seed selected: Generating non-reproducible sorting!")
+} else {
+  print("Seed not numeric: Generating non-reproducible sorting!")
+}
 masterlist <- masterlist %>%
     separate(Student.Name, c("LastName","FirstName"), ',') %>%  # split Student Name
     mutate(foo = runif(nrow(masterlist)))  %>%                  # assign random number
@@ -86,7 +96,11 @@ write("\\newcolumntype{L}[1]{>{\\raggedright\\let\\newline\\\\\\arraybackslash\\
 write("\\newcolumntype{C}[1]{>{\\centering\\let\\newline\\\\\\arraybackslash\\hspace{0pt}}m{#1}}",file=sigfile, append = T)
 write("\\newcolumntype{R}[1]{>{\\raggedleft\\let\\newline\\\\\\arraybackslash\\hspace{0pt}}m{#1}}",file=sigfile, append = T)
 write("\\pagestyle{fancy}", file=sigfile, append = T)
-write(paste0("\\lhead{",gsub("_","\\\\_",outfile),"}"), file=sigfile, append = T)
+if (is.numeric(seed)) {
+  write(paste0("\\lhead{",gsub("_","\\\\_",outfile)," (",seed,")}"), file=sigfile, append = T)
+} else {
+  write(paste0("\\lhead{",gsub("_","\\\\_",outfile),"}"), file=sigfile, append = T)
+}
 write("\\rhead{Page \\thepage\\ of \\pageref{LastPage}}", file=sigfile, append = T)
 write("\\topmargin -20mm", file=sigfile, append = T)
 

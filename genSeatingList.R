@@ -6,31 +6,33 @@ library(tidyr)          # for separate()
 library(gridExtra)      # for grid.arrange & tableGrob
 library(openxlsx)       # for Excel (but does not read xls files)
 
-outfile <- readline("Specify output file (e.g. FINA1000_2017Fall_Final): ")  
+outfile <- readline("Specify output file (e.g. FINA1000_2017Fall_Final): ")
 sections <- strsplit(readline("Specify section (e.g. ABC or CE): "), split="")[[1]]
 courses <- paste0(readline("Specify Course Name (fixed part of Banner xls filenames, e.g. FINA_1000_1): "), sections)
 subset <- readline("Specify set of exam numbers (e.g. Odds, Evens or leave blank for All): ")
 subset <- ifelse(subset=="","All", subset)
 seed <- readline("Enter numeric seed for reproducable sorting or leave empty: ")
 CompileTeXFlag <- ifelse(readline("Enter 0 to NOT compile LaTeX files automatically, otherwise leave empty: ")==0,FALSE,TRUE)
+A4Flag <- ifelse(readline("Enter a4 for A4 paperformat, or leave empty for letter format: ")==0,FALSE,TRUE)
 
 #Default (test) values
 outfile <- ifelse(outfile=="",'FINA1000_2017Fall_Final', outfile)
 if (length(sections)==0) {
-  sections <- c('A','B','C') 
+  sections <- c('A','B','C')
 }
-if (courses=="") {
+if (length(courses)==0) {
   courses <- paste0('FINA_1000_1', sections)
 }
- 
+
 # create masterlist
 courselist <- list()
 for (i in 1:length(courses)) {
-    courselist[[i]] <- read.csv(paste0(courses[i],'.csv'))
+    courselist[[i]] <- read.csv(paste0(courses[i],'.csv'),strip.white = T)
     courselist[[i]]$Course <- courses[i]
 }
 masterlist <- do.call('rbind',courselist)
 masterlist <- masterlist[complete.cases(masterlist),]
+print(masterlist$Student.Name)
 masterlist$Student.Name <- as.character(masterlist$Student.Name)
 if (!is.na(as.numeric(seed))) {
   seed <- as.numeric(seed)
@@ -47,7 +49,7 @@ masterlist <- masterlist %>%
     mutate(foo = ifelse(Record.Number == 999, 2, foo))  %>%     # mark Disability Center Students
     arrange(foo) %>%                                            # sort by random number
     mutate(ExamNumber = 1:nrow(masterlist))                     # assign ExamNumbers
-    if (subset == 'Odds') {
+    if (subset == "Odds") {
       masterlist <- masterlist %>% mutate(ExamNumber = 2*ExamNumber - 1) # use only odd ExamNumbers
     } else if (subset == "Evens") {
       masterlist <- masterlist %>% mutate(ExamNumber = 2*ExamNumber) # use only even ExamNumbers
@@ -60,12 +62,15 @@ if (dim(masterlist[duplicated(masterlist[c("LastName","FirstName")]),])[1] > 0) 
 }
 
 # Function to write ExamNumber lookup lists to pdf files
+#paper <- ifelse(A4Flag,"a4","letter") # if used tables appear too small
 write2pdf <- function(df, rowsPerPage, outfile, filesuffix) {
   maxnrow = nrow(df)
   npages = ceiling(maxnrow/rowsPerPage)
+  #pdf(file = paste0(outfile,"-",filesuffix,".pdf"), paper = paper, pointsize = 16)
   pdf(file = paste0(outfile,"-",filesuffix,".pdf"))
   for (i in 1:npages) {
     idx = seq(1+((i-1)*rowsPerPage), min(i*rowsPerPage,maxnrow))
+    #grid.arrange(tableGrob(df[idx,], rows = NULL, theme = ttheme_default(base_size = 16) ), top = outfile)
     grid.arrange(tableGrob(df[idx,], rows = NULL), top = outfile)
   }
   dev.off()
@@ -87,8 +92,15 @@ print("Examlist (By A Number) successfully created!")
 # Create Signature Sheet
 m <- masterlist
 sigfile <- paste0(outfile,"-signaturesheet.tex")
+if (A4Flag) {
+  geometry.package <- "\\usepackage[a4paper,margin=3mm]{geometry}"
+  table.header <- "\\begin{tabular}{|c|L{8.5cm}|C{3cm}|C{4.3cm}|}"
+} else {
+  geometry.package <- "\\usepackage[margin=3mm]{geometry}"
+  table.header <- "\\begin{tabular}{|c|L{8.5cm}|C{3cm}|C{5cm}|}"
+}
 write("\\documentclass[12pt]{article}", file=sigfile)
-write("\\usepackage[margin=0mm]{geometry}", file=sigfile, append = T)
+write(geometry.package, file=sigfile, append = T)
 write("\\usepackage{array}", file=sigfile, append = T)
 write("\\usepackage{fancyhdr}", file=sigfile, append = T)
 write("\\usepackage{lastpage}", file=sigfile, append = T)
@@ -110,7 +122,7 @@ write("\\begin{LARGE}", file=sigfile, append = T)
 for (i in 1:nrow(m)) {
     if (i%%20 == 1) {
         if (i != 1) write("\\newpage", file=sigfile, append = T)
-        write("\\begin{tabular}{|c|L{9cm}|C{3cm}|C{5cm}|}", file=sigfile, append = T)
+        write(table.header, file=sigfile, append = T)
         write("\\hline", file=sigfile, append = T)
         write("Exam & Name & A Number & Signature \\\\ \\hline", file=sigfile, append = T)
     }
@@ -124,7 +136,7 @@ write("\\end{document}", file=sigfile, append = T)
 if (CompileTeXFlag) {
   command <- paste0("pdflatex -synctex=1 -shell-escape -interaction=batchmode ",sigfile)
   if (Sys.info()['sysname']=="Linux") {
-    command <- paste0(command, "> /dev/null")  
+    command <- paste0("/usr/local/texlive/2019/bin/x86_64-linux/",command, "> /dev/null")
   }
   system(command)
   system(command)
